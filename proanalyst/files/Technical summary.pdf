@@ -1,0 +1,311 @@
+# Technical Summary
+
+## Project Overview
+
+This project implements a Retrieval-Augmented Generation (RAG) based Technical Support Assistant for the Upwork API documentation.
+
+The objective is to enable developers to ask natural language questions about the Upwork API and receive accurate, documentation-grounded responses. The system combines semantic retrieval with a hosted Large Language Model (LLM) to minimize hallucinations and improve answer reliability.
+
+The solution was developed as part of the Associate AI Developer Take-Home Assignment for ProAnalyst.
+
+---
+
+# Problem Statement
+
+Developers often need to search through lengthy API documentation to find answers regarding:
+
+* Authentication workflows
+* OAuth grant types
+* GraphQL operations
+* Service account permissions
+* Subscription events
+* Metadata queries
+
+Traditional keyword search may fail when users phrase questions differently from the wording used in documentation.
+
+To address this challenge, a Retrieval-Augmented Generation (RAG) pipeline was implemented to enable semantic understanding and context-aware answering.
+
+---
+
+# Solution Architecture
+
+The system consists of three major components:
+
+### 1. Knowledge Ingestion Layer
+
+Implemented in:
+
+```text
+ingest.py
+```
+
+Responsibilities:
+
+* Load Upwork API documentation PDF
+* Extract textual content
+* Split documents into manageable chunks
+* Generate vector embeddings
+* Store embeddings in ChromaDB
+
+---
+
+### 2. Retrieval and Generation Layer
+
+Implemented in:
+
+```text
+rag.py
+```
+
+Responsibilities:
+
+* Convert user query into embeddings
+* Perform semantic similarity search
+* Retrieve top 3 relevant chunks
+* Construct grounded prompts
+* Invoke hosted LLM
+* Return generated response
+
+---
+
+### 3. User Interface Layer
+
+Implemented in:
+
+```text
+app.py
+```
+
+Responsibilities:
+
+* Accept user queries
+* Display generated answers
+* Show retrieved source snippets
+* Display response latency
+
+---
+
+# RAG Workflow
+
+```text
+PDF Documentation
+        │
+        ▼
+Text Extraction
+        │
+        ▼
+Chunking (500 Characters)
+        │
+        ▼
+Embedding Generation
+        │
+        ▼
+ChromaDB Storage
+
+────────────────────────────
+
+User Query
+        │
+        ▼
+Query Embedding
+        │
+        ▼
+Top-3 Similarity Retrieval
+        │
+        ▼
+Prompt Construction
+        │
+        ▼
+Hosted LLM
+        │
+        ▼
+Generated Response
+```
+
+---
+
+# Chunking Strategy
+
+Configuration:
+
+```text
+Chunk Size = 500
+Chunk Overlap = 50
+```
+
+Reasoning:
+
+Technical documentation frequently contains information spanning multiple paragraphs, including:
+
+* API endpoints
+* Parameter descriptions
+* Request examples
+* Authentication flows
+
+Using overlap helps preserve context across chunk boundaries and improves retrieval quality.
+
+---
+
+# Embedding Model Selection
+
+Model:
+
+```text
+sentence-transformers/all-MiniLM-L6-v2
+```
+
+Reasons:
+
+* Lightweight and efficient
+* Strong semantic retrieval performance
+* Fast local inference
+* Widely adopted in RAG applications
+
+The embedding model runs locally and does not require external API calls.
+
+---
+
+# Vector Database Selection
+
+Database:
+
+```text
+ChromaDB
+```
+
+Reasons:
+
+* Lightweight local deployment
+* Persistent storage support
+* Simple integration with LangChain
+* Fast similarity search
+
+ChromaDB was selected over larger alternatives because the assignment requires a compact, local vector store.
+
+---
+
+# Retrieval Strategy
+
+The retriever returns:
+
+```text
+Top K = 3
+```
+
+Reasoning:
+
+* Too few chunks may miss important context.
+* Too many chunks may introduce noise.
+* Top-3 provides a balance between relevance and context coverage.
+
+---
+
+# LLM Integration
+
+Provider:
+
+```text
+DeepInfra
+```
+
+Model:
+
+```text
+Meta-Llama-3.1-8B-Instruct-Turbo
+```
+
+Reasons:
+
+* Hosted inference
+* Low integration complexity
+* OpenAI-compatible API
+* Suitable response quality for technical Q&A tasks
+
+---
+
+# Prompt Engineering
+
+The model is instructed to behave as:
+
+```text
+Senior Upwork API Consultant
+```
+
+Key prompt rules:
+
+* Use only retrieved context.
+* Do not invent information.
+* Base answers strictly on documentation.
+* Return concise and accurate responses.
+
+---
+
+# Hallucination Prevention
+
+A hallucination guard is implemented to prevent unsupported responses.
+
+If the retrieved context does not contain sufficient information to answer a question, the system responds with:
+
+```text
+I'm sorry, but the provided documentation does not contain that information.
+```
+
+This ensures answer reliability and prevents fabrication.
+
+---
+
+# Security Considerations
+
+The project follows basic security practices:
+
+* API keys stored in environment variables
+* No hardcoded credentials
+* `.env` excluded from version control
+* Local vector storage
+* Secrets managed through python-dotenv
+
+---
+
+# Assignment Requirement Compliance
+
+| Requirement         | Status |
+| ------------------- | ------ |
+| PDF Ingestion       | ✅      |
+| Text Sanity Check   | ✅      |
+| Chunk Size 500      | ✅      |
+| Chunk Overlap 50    | ✅      |
+| ChromaDB Storage    | ✅      |
+| Semantic Retrieval  | ✅      |
+| Top-3 Retrieval     | ✅      |
+| Hosted LLM API      | ✅      |
+| Prompt Engineering  | ✅      |
+| Hallucination Guard | ✅      |
+| Streamlit Interface | ✅      |
+| Source Display      | ✅      |
+| Latency Display     | ✅      |
+| requirements.txt    | ✅      |
+| .env.example        | ✅      |
+
+---
+
+# Challenges and Learnings
+
+### Challenges
+
+* Preserving context across documentation sections.
+* Preventing hallucinations for unsupported questions.
+* Balancing retrieval quality and prompt size.
+* Maintaining low latency while ensuring answer accuracy.
+
+### Learnings
+
+* Effective chunking significantly impacts retrieval quality.
+* Prompt design plays a major role in grounding responses.
+* Source attribution improves transparency and trust.
+* RAG systems are more maintainable than fine-tuned models for frequently changing documentation.
+
+---
+
+# Conclusion
+
+The project successfully implements a complete RAG pipeline for Upwork API documentation question answering. By combining semantic retrieval, ChromaDB vector search, prompt engineering, and a hosted LLM, the system delivers grounded responses while minimizing hallucinations and providing source transparency.
